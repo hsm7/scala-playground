@@ -57,3 +57,14 @@ List(Purchase(3, 10), Purchase(10, 5), Purchase(2, 20)).sorted
 
 // sort by unitCount explicitly
 List(Purchase(3, 10), Purchase(10, 5), Purchase(2, 20)).sorted(UnitCountOrdering.unitCountOrdering)
+
+
+
+// Type enrichment (Pimp My Library)
+implicit class RichString(string: String) {
+  def asInt: Int = Integer.valueOf(string) // java.lang.Integer -> Int
+  def encrypt(cypherDistance: Int): String = string.map(c => (c + cypherDistance).asInstanceOf[Char])
+}
+
+"3".asInt + 4
+"John".encrypt(2)
