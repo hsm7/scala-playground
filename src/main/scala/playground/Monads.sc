@@ -1,5 +1,3 @@
-package playground
-
 object Monads extends App {
 
   /** Attempt Monad */

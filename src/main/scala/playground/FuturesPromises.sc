@@ -1,5 +1,3 @@
-package playground
-
 
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.{Failure, Random, Success, Try}
@@ -91,7 +89,9 @@ object FuturesPromises extends App {
     case _: Throwable => SocialNetwork.fetchProfile("fb.id.0-dummy")
   }
 
-  val fallbackResult =  SocialNetwork.fetchProfile("unknown id").fallbackTo(SocialNetwork.fetchProfile("fb.id.0-dummy"))
+  val fallbackResult =  SocialNetwork.fetchProfile("unknown id").fallbackTo {
+    SocialNetwork.fetchProfile("fb.id.0-dummy")
+  }
 
   // online banking app
   case class User(name: String)

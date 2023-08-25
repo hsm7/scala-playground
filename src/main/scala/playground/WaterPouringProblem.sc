@@ -2,7 +2,7 @@ class WaterPouringProblem(capacity: Vector[Int]) {
 
   // States
   type State = Vector[Int]
-  val initialState: Vector[Int] = capacity map (x => 0)
+  val initialState: Vector[Int] = capacity map (_ => 0)
 
   // Moves
   trait Move {
@@ -17,7 +17,7 @@ class WaterPouringProblem(capacity: Vector[Int]) {
   }
   case class Pour(from: Int, to: Int) extends Move {
     def change(state: State): State = {
-      val amount = state(from) min (capacity(to) - state(to))
+      val amount = state(from).min(capacity(to) - state(to))
       state updated (to, state(to) + amount) updated (from, state(from) - amount)
     }
   }
