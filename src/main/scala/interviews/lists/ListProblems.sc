@@ -1,4 +1,5 @@
 import scala.annotation.tailrec
+import scala.util.Random
 
 sealed abstract class RList[+T] {
 
@@ -33,7 +34,24 @@ sealed abstract class RList[+T] {
   def rle: RList[(T, Int)]
   // duplicate each element k times in a row
   def duplicateEach(k: Int): RList[T]
+  // rotate the list k positions to the left
+  def rotate(k: Int): RList[T]
+  // random sample of k elements from this list
+  def sample(k: Int): RList[T]
 
+}
+
+object RList {
+  def apply[T](iterable: Iterable[T]): RList[T] = {
+    // O(n)
+    @tailrec
+    def recursion(remaining: Iterable[T], acc: RList[T]): RList[T] = {
+      if (remaining.isEmpty) acc
+      else recursion(remaining.tail, remaining.head :: acc)
+    }
+
+    recursion(iterable, RNil).reverse
+  }
 }
 
 case object RNil extends RList[Nothing] {
@@ -53,6 +71,8 @@ case object RNil extends RList[Nothing] {
 
   override def rle: RList[(Nothing, Int)] = this
   override def duplicateEach(k: Int): RList[Nothing] = this
+  override def rotate(k: Int) = this
+  override def sample(k: Int) = throw new UnsupportedOperationException
 }
 
 case class Cons[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -182,7 +202,6 @@ case class Cons[+T](override val head: T, override val tail: RList[T]) extends R
   }
 
   override def duplicateEach(k: Int): RList[T] = {
-
     // O(k)
     @tailrec
     def duplicate(element: T, count: Int, accumulator: RList[T]): RList[T] =
@@ -191,6 +210,36 @@ case class Cons[+T](override val head: T, override val tail: RList[T]) extends R
 
     // O(k * n), k is the number of duplications
     this.flatMap(elem => duplicate(elem, 0, RNil))
+  }
+
+  override def rotate(k: Int): RList[T] = {
+    // O(n)
+    @tailrec
+    def recursion(left: RList[T], right: RList[T], i: Int): RList[T] = {
+      if (i == k % this.length) left ++ right.reverse
+      else recursion(left.tail, left.head :: right, i + 1)
+    }
+
+    recursion(this, RNil, 0)
+  }
+
+  override def sample(k: Int): RList[T] = {
+    val random = new Random(System.currentTimeMillis())
+    val length = this.length
+
+    // O(n * k)
+    @tailrec
+    def recursion(i: Int, accumulator: RList[T]): RList[T] = {
+      if (i == k) accumulator
+      else recursion(i + 1, this(random.nextInt(length)) :: accumulator)
+    }
+
+    // O(n * k)
+    def elegant: RList[T] = RList(1 to k)
+      .map(_ => random.nextInt(length))
+      .map(this(_))
+
+    elegant
   }
 
 }
