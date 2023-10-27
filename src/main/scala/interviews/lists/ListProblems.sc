@@ -39,15 +39,22 @@ sealed abstract class RList[+T] {
   // random sample of k elements from this list
   def sample(k: Int): RList[T]
 
+  /** Hard Problems (Sorting Algorithms) */
+
+  // sorting the list in the order defined by the Ordering object
+  def insertSort[S >: T](ordering: Ordering[S]): RList[S]
+  def mergeSort[S >: T](ordering: Ordering[S]): RList[S]
+  def quickSort[S >: T](ordering: Ordering[S]): RList[S]
+
 }
 
 object RList {
   def apply[T](iterable: Iterable[T]): RList[T] = {
     // O(n)
     @tailrec
-    def recursion(remaining: Iterable[T], acc: RList[T]): RList[T] = {
-      if (remaining.isEmpty) acc
-      else recursion(remaining.tail, remaining.head :: acc)
+    def recursion(remaining: Iterable[T], accumulator: RList[T]): RList[T] = {
+      if (remaining.isEmpty) accumulator
+      else recursion(remaining.tail, remaining.head :: accumulator)
     }
 
     recursion(iterable, RNil).reverse
@@ -73,6 +80,10 @@ case object RNil extends RList[Nothing] {
   override def duplicateEach(k: Int): RList[Nothing] = this
   override def rotate(k: Int) = this
   override def sample(k: Int) = throw new UnsupportedOperationException
+
+  override def insertSort[S >: Nothing](ordering: Ordering[S]): RList[S] = this
+  override def mergeSort[S >: Nothing](ordering: Ordering[S]): RList[S] = this
+  override def quickSort[S >: Nothing](ordering: Ordering[S]): RList[S] = this
 }
 
 case class Cons[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -240,6 +251,71 @@ case class Cons[+T](override val head: T, override val tail: RList[T]) extends R
       .map(this(_))
 
     elegant
+  }
+
+  override def insertSort[S >: T](ordering: Ordering[S]): RList[S] = {
+    // O(n)
+    @tailrec
+    def insert(elem: S, left: RList[S], right: RList[S]): RList[S] =
+      if (right.isEmpty || ordering.lteq(elem, right.head)) left.reverse ++ (elem :: right)
+      else insert(elem, right.head :: left, right.tail)
+
+    // O(n^2)
+    @tailrec
+    def insertSort(rem: RList[S], accumulator: RList[S]): RList[S] =
+      if (rem.isEmpty) accumulator
+      else insertSort(rem.tail, insert(rem.head, RNil, accumulator))
+
+    insertSort(this, RNil)
+  }
+
+  override def mergeSort[S >: T](ordering: Ordering[S]): RList[S] = {
+
+    @tailrec
+    def merge(left: RList[S], right: RList[S], accumulator: RList[S]): RList[S] =
+      if (left.isEmpty) accumulator.reverse ++ right
+      else if (right.isEmpty) accumulator.reverse ++ left
+      else if (ordering.lteq(left.head, right.head)) merge(left.tail, right, left.head :: accumulator)
+      else merge(left, right.tail, right.head :: accumulator)
+
+    @tailrec
+    def split(left: RList[S], right: RList[S], length: Int): (RList[S], RList[S]) =
+      if (length == 0) (left, right)
+      else split(right.head :: left, right.tail, length - 1)
+
+    def mergeSort(list: RList[S]): RList[S] =
+    // split the list into two halves
+    // sort each part recursively then merge the result
+      if (list.isEmpty || list.tail.isEmpty) list
+      else {
+        val (left, right) = split(RNil, list, list.length / 2)
+        merge(mergeSort(left), mergeSort(right), RNil)
+      }
+
+    mergeSort(this)
+  }
+
+  override def quickSort[S >: T](ordering: Ordering[S]): RList[S] = {
+
+    @tailrec
+    def partition(rem: RList[S], pivot: S, left: RList[S], right: RList[S]): (RList[S], RList[S]) = {
+      if (rem.isEmpty) (left, right)
+      else if (ordering.lteq(pivot, rem.head)) partition(rem.tail, pivot, left, rem.head :: right)
+      else partition(rem.tail, pivot, rem.head :: left, right)
+    }
+
+    def quickSort(list: RList[S]): RList[S] =
+    // take an arbitrary pivot from the list (list.head)
+    // split the list into two parts (less than pivot and greater than pivot)
+    // sort each part recursively then combine the result
+      if (list.isEmpty || list.tail.isEmpty) list
+      else {
+        val pivot = list.head
+        val (left, right) = partition(list.tail, pivot, RNil, RNil)
+        quickSort(left) ++ (pivot :: quickSort(right))
+      }
+
+    quickSort(this)
   }
 
 }
