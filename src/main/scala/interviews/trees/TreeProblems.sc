@@ -233,7 +233,8 @@ def hasPathSum(tree: Tree[Int], target: Int): Boolean = {
 def pathSum(tree: Tree[Int], target: Int): List[Tree[Int]] = {
 
   @tailrec
-  def recursion(frontier: List[Tree[Int]], visited: Set[Tree[Int]], sum: Int, acc: List[Tree[Int]]): List[Tree[Int]] = {
+  def recursion(frontier: List[Tree[Int]], visited: Set[Tree[Int]], sum: Int,
+                acc: List[Tree[Int]]): List[Tree[Int]] = {
     if (frontier.isEmpty) List.empty
     else if (frontier.head.isEmpty) recursion(frontier.tail, visited, sum, acc)
     else {
@@ -251,26 +252,56 @@ def pathSum(tree: Tree[Int], target: Int): List[Tree[Int]] = {
 def allSumPaths(tree: Tree[Int], target: Int): Set[List[Int]] = {
 
   @tailrec
-  def recursion(frontier: List[Tree[Int]],
-                visited: Set[Tree[Int]],
-                sum: Int,
-                path: List[Int],
-                acc: Set[List[Int]]
-               ): Set[List[Int]] = {
+  def recursion(frontier: List[Tree[Int]], visited: Set[Tree[Int]], sum: Int,
+                path: List[Int], acc: Set[List[Int]]): Set[List[Int]] = {
     if (frontier.isEmpty) acc
     else if (frontier.head.isEmpty) recursion(frontier.tail, visited, sum, path, acc)
     else {
       val tree = frontier.head
       val total = sum + tree.value
-      if (visited.contains(tree)) {
-        recursion(frontier.tail, visited - tree, sum - tree.value, path.tail, acc)
-      }
+      if (visited.contains(tree)) recursion(frontier.tail, visited - tree, sum - tree.value, path.tail, acc)
       else if (tree.isLeaf && total == target) {
         recursion(frontier.tail, visited, sum, path, acc + (tree.value :: path).reverse)
-      }
-      else if (total > target) recursion(frontier.tail, visited, sum, path, acc)
+      } else if (total > target) recursion(frontier.tail, visited, sum, path, acc)
       else recursion(tree.left :: tree.right :: tree :: frontier.tail, visited + tree, total, tree.value :: path, acc)
     }
   }
   recursion(List(tree), Set.empty, 0, List.empty, Set.empty)
+}
+
+// Given a binary tree, we install cameras on the nodes of the tree.
+// Each camera at a node can monitor its parent, itself, and its immediate children.
+// Calculate the minimum number of cameras needed to monitor all nodes of the tree.
+def surveillanceCameras[T](tree: Tree[T]): Int = {
+
+  def stackRecursion(node: Tree[T]): (Int, Boolean) = {
+    if (node.isEmpty || node.isLeaf) (0, false)
+    else {
+      val (leftCameras, leftState) = stackRecursion(node.left)
+      val (rightCameras, rightState) = stackRecursion(node.right)
+      if (leftState && rightState) (leftCameras + rightCameras, false)
+      else (leftCameras + rightCameras + 1, true)
+    }
+  }
+
+  @tailrec
+  def recursion(frontier: List[Tree[T]], cameras: List[Boolean], visited: Set[Tree[T]], n: Int): Int =
+    // traverse the tree in postorder maintaining the state of visited notes and cameras
+    // if a child is leaf then its parent should have a camera
+    // if a child doesn't have a camera then the parent should have
+    if (frontier.isEmpty) n
+    else {
+      val tree = frontier.head
+      if (tree.isEmpty) recursion(frontier.tail, false :: cameras, visited, n)
+      else if (tree.isLeaf) recursion(frontier.tail, false :: cameras, visited, n)
+      else if (visited.contains(tree)) {
+        val rightCam = cameras.head
+        val leftCam = cameras.tail.head
+        if (rightCam && leftCam) recursion(frontier.tail, false :: cameras.drop(2), visited - tree, n)
+        else recursion(frontier.tail, true :: cameras.drop(2), visited - tree, n + 1)
+      } else recursion(tree.left :: tree.right :: tree :: frontier.tail, cameras, visited + tree, n)
+    }
+
+  val (cams, _) = if (tree.isLeaf) (1, true) else stackRecursion(tree)
+  if (tree.isLeaf) 1 else recursion(List(tree), List.empty, Set.empty, 0)
 }
